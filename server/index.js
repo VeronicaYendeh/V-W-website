@@ -14,7 +14,17 @@ console.log("EMAIL_PASS exists?:", !!process.env.EMAIL_PASS);
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(cors({ origin: "http://localhost:5173" }));
+app.use(
+  cors({
+    origin: [
+      "http://localhost:5173", // local dev
+      "https://bejeweled-fox-af76f6.netlify.app", // Netlify production
+    ],
+    methods: ["GET", "POST"],
+    allowedHeaders: ["Content-Type"],
+  })
+);
+
 app.use(express.json({ limit: "10mb" }));
 
 app.post("/send-email", async (req, res) => {
