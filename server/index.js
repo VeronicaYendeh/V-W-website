@@ -5,28 +5,46 @@ const express = require("express");
 const nodemailer = require("nodemailer");
 const cors = require("cors");
 
-
 console.log("NODE_ENV:", process.env.NODE_ENV);
 console.log("EMAIL_USER:", process.env.EMAIL_USER);
 console.log("EMAIL_PASS exists?:", !!process.env.EMAIL_PASS);
 
-
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+/* =======================
+   CORS CONFIG (FIXED)
+======================= */
+const allowedOrigins = [
+  "http://localhost:5173", // local dev
+  "https://bejeweled-fox-af76f6.netlify.app", // Netlify production
+];
+
 app.use(
   cors({
-    origin: [
-      "http://localhost:5173", // local dev
-      "https://bejeweled-fox-af76f6.netlify.app", // Netlify production
-    ],
-    methods: ["GET", "POST"],
+    origin: function (origin, callback) {
+      // allow requests with no origin (Postman, curl, etc.)
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error(`CORS blocked for origin: ${origin}`));
+      }
+    },
+    methods: ["GET", "POST", "OPTIONS"],
     allowedHeaders: ["Content-Type"],
   })
 );
 
+// ✅ REQUIRED for Netlify preflight requests
+app.options("*", cors());
+
 app.use(express.json({ limit: "10mb" }));
 
+/* =======================
+   EMAIL ENDPOINT
+======================= */
 app.post("/send-email", async (req, res) => {
   try {
     const { message, score, drawings = [] } = req.body;
@@ -43,16 +61,14 @@ app.post("/send-email", async (req, res) => {
       },
     });
 
-    // Optional: validate transporter login (helps debugging)
+    // Verify transporter (good for Render logs)
     await transporter.verify();
 
-    const attachments = drawings.length
-      ? drawings.map((image, index) => ({
-          filename: `drawing_${index + 1}.png`,
-          content: image.split(";base64,")[1],
-          encoding: "base64",
-        }))
-      : [];
+    const attachments = drawings.map((image, index) => ({
+      filename: `drawing_${index + 1}.png`,
+      content: image.split(";base64,")[1],
+      encoding: "base64",
+    }));
 
     const mailOptions = {
       from: process.env.EMAIL_USER,
@@ -64,20 +80,20 @@ app.post("/send-email", async (req, res) => {
 
     await transporter.sendMail(mailOptions);
 
-    console.log("Email sent successfully");
+    console.log("✅ Email sent successfully");
     return res.status(200).json({ success: true });
   } catch (error) {
-    console.error("EMAIL ERROR FULL:", error);
+    console.error("❌ EMAIL ERROR:", error);
     return res.status(500).json({
       message: "Error sending email",
-      error: error?.message,
-      code: error?.code,
-      response: error?.response,
+      error: error.message,
     });
   }
 });
 
-
-app.listen(PORT, () =>
-  console.log(`Server running on port ${PORT}`)
-);
+/* =======================
+   START SERVER
+======================= */
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+});
