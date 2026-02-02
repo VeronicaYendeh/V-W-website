@@ -15,6 +15,8 @@ console.log("EMAIL_PASS exists?:", !!process.env.EMAIL_PASS);
 /* =======================
    CORS CONFIG (FINAL FIX)
 ======================= */
+const cors = require("cors");
+
 const allowedOrigins = [
   "http://localhost:5173",
   "https://bejeweled-fox-af76f6.netlify.app",
@@ -23,19 +25,25 @@ const allowedOrigins = [
 app.use(
   cors({
     origin: function (origin, callback) {
-      // allow server-to-server, curl, Postman
+      // allow requests with no origin (Postman, Render health checks)
       if (!origin) return callback(null, true);
 
       if (allowedOrigins.includes(origin)) {
-        return callback(null, true);
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
       }
-
-      return callback(new Error("CORS not allowed"), false);
     },
     methods: ["GET", "POST", "OPTIONS"],
     allowedHeaders: ["Content-Type"],
   })
 );
+
+// REQUIRED: handle preflight globally
+app.options("*", cors());
+
+app.use(express.json({ limit: "10mb" }));
+
 
 // ✅ IMPORTANT: let cors() handle OPTIONS
 app.options("*", cors());
