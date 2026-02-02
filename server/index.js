@@ -1,6 +1,3 @@
-const path = require("path");
-require("dotenv").config({ path: path.join(__dirname, ".env") });
-
 const express = require("express");
 const nodemailer = require("nodemailer");
 const cors = require("cors");
@@ -13,10 +10,8 @@ console.log("EMAIL_USER:", process.env.EMAIL_USER);
 console.log("EMAIL_PASS exists?:", !!process.env.EMAIL_PASS);
 
 /* =======================
-   CORS CONFIG (FINAL FIX)
+   CORS (CORRECT – SINGLE SOURCE)
 ======================= */
-const cors = require("cors");
-
 const allowedOrigins = [
   "http://localhost:5173",
   "https://bejeweled-fox-af76f6.netlify.app",
@@ -25,28 +20,16 @@ const allowedOrigins = [
 app.use(
   cors({
     origin: function (origin, callback) {
-      // allow requests with no origin (Postman, Render health checks)
-      if (!origin) return callback(null, true);
-
+      if (!origin) return callback(null, true); // Postman / server-to-server
       if (allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error("Not allowed by CORS"));
+        return callback(null, true);
       }
+      return callback(new Error("CORS not allowed"));
     },
     methods: ["GET", "POST", "OPTIONS"],
     allowedHeaders: ["Content-Type"],
   })
 );
-
-// REQUIRED: handle preflight globally
-app.options("*", cors());
-
-app.use(express.json({ limit: "10mb" }));
-
-
-// ✅ IMPORTANT: let cors() handle OPTIONS
-app.options("*", cors());
 
 app.use(express.json({ limit: "10mb" }));
 
@@ -85,11 +68,11 @@ app.post("/send-email", async (req, res) => {
       attachments,
     });
 
-    console.log("✅ Email sent");
-    res.status(200).json({ success: true });
+    console.log("✅ Email sent successfully");
+    res.json({ success: true });
   } catch (error) {
     console.error("❌ EMAIL ERROR:", error);
-    res.status(500).json({ message: "Error sending email" });
+    res.status(500).json({ message: "Email failed", error: error.message });
   }
 });
 
