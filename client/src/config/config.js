@@ -135,11 +135,10 @@ const config = {
     },
     // API configuration for sending emails
     api: {
-      baseURL: `https://v-w-website-api.onrender.com`,
-      // Configure this based on your development port (check server/app.js or .env.PORT) and update this to your live backend URL after deployment
+  baseURL: `https://v-w-website-api-ork9.onrender.com`,
+  sendEmailEndpoint: "/send-email",
+},
 
-      sendEmailEndpoint: "/send-email", // Endpoint for sending emails
-    },
   },
 
   // ==== CLOSING PAGE ====
