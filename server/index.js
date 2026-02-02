@@ -16,26 +16,29 @@ const PORT = process.env.PORT || 3000;
    CORS CONFIG (FIXED)
 ======================= */
 const allowedOrigins = [
-  "http://localhost:5173", // local dev
-  "https://bejeweled-fox-af76f6.netlify.app", // Netlify production
+  "http://localhost:5173",
+  "https://bejeweled-fox-af76f6.netlify.app",
 ];
 
-app.use(
-  cors({
-    origin: function (origin, callback) {
-      // allow requests with no origin (Postman, curl, etc.)
-      if (!origin) return callback(null, true);
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
 
-      if (allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error(`CORS blocked for origin: ${origin}`));
-      }
-    },
-    methods: ["GET", "POST", "OPTIONS"],
-    allowedHeaders: ["Content-Type"],
-  })
-);
+  if (allowedOrigins.includes(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+  }
+
+  res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  res.setHeader("Access-Control-Allow-Credentials", "true");
+
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(200);
+  }
+
+  next();
+});
+
+
 
 // ✅ REQUIRED for Netlify preflight requests
 app.options("*", cors());
