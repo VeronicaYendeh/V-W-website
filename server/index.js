@@ -5,17 +5,16 @@ const express = require("express");
 const nodemailer = require("nodemailer");
 const cors = require("cors");
 
+const app = express();
+const PORT = process.env.PORT || 3000;
+
 console.log("NODE_ENV:", process.env.NODE_ENV);
 console.log("EMAIL_USER:", process.env.EMAIL_USER);
 console.log("EMAIL_PASS exists?:", !!process.env.EMAIL_PASS);
 
-const app = express();
-const PORT = process.env.PORT || 3000;
-
 /* =======================
    CORS CONFIG (FINAL FIX)
 ======================= */
-
 const allowedOrigins = [
   "http://localhost:5173",
   "https://bejeweled-fox-af76f6.netlify.app",
@@ -24,19 +23,22 @@ const allowedOrigins = [
 app.use(
   cors({
     origin: function (origin, callback) {
-      // allow requests with no origin (Postman, curl, etc.)
+      // allow server-to-server, curl, Postman
       if (!origin) return callback(null, true);
 
       if (allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error("Not allowed by CORS"));
+        return callback(null, true);
       }
+
+      return callback(new Error("CORS not allowed"), false);
     },
     methods: ["GET", "POST", "OPTIONS"],
     allowedHeaders: ["Content-Type"],
   })
 );
+
+// ✅ IMPORTANT: let cors() handle OPTIONS
+app.options("*", cors());
 
 app.use(express.json({ limit: "10mb" }));
 
@@ -59,7 +61,6 @@ app.post("/send-email", async (req, res) => {
       },
     });
 
-    // Verify transporter (helps debugging on Render)
     await transporter.verify();
 
     const attachments = drawings.map((image, index) => ({
@@ -68,24 +69,19 @@ app.post("/send-email", async (req, res) => {
       encoding: "base64",
     }));
 
-    const mailOptions = {
+    await transporter.sendMail({
       from: process.env.EMAIL_USER,
       to: process.env.EMAIL_USER,
       subject: "Drawings and letter for you 💌",
       text: `Message:\n${message}\n\nScore:\n${score ?? ""}`,
       attachments,
-    };
+    });
 
-    await transporter.sendMail(mailOptions);
-
-    console.log("✅ Email sent successfully");
-    return res.status(200).json({ success: true });
+    console.log("✅ Email sent");
+    res.status(200).json({ success: true });
   } catch (error) {
     console.error("❌ EMAIL ERROR:", error);
-    return res.status(500).json({
-      message: "Error sending email",
-      error: error.message,
-    });
+    res.status(500).json({ message: "Error sending email" });
   }
 });
 
