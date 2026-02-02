@@ -13,35 +13,30 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 /* =======================
-   CORS CONFIG (FIXED)
+   CORS CONFIG (FINAL FIX)
 ======================= */
+
 const allowedOrigins = [
   "http://localhost:5173",
   "https://bejeweled-fox-af76f6.netlify.app",
 ];
 
-app.use((req, res, next) => {
-  const origin = req.headers.origin;
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      // allow requests with no origin (Postman, curl, etc.)
+      if (!origin) return callback(null, true);
 
-  if (allowedOrigins.includes(origin)) {
-    res.setHeader("Access-Control-Allow-Origin", origin);
-  }
-
-  res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-  res.setHeader("Access-Control-Allow-Credentials", "true");
-
-  if (req.method === "OPTIONS") {
-    return res.sendStatus(200);
-  }
-
-  next();
-});
-
-
-
-// ✅ REQUIRED for Netlify preflight requests
-app.options("*", cors());
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    methods: ["GET", "POST", "OPTIONS"],
+    allowedHeaders: ["Content-Type"],
+  })
+);
 
 app.use(express.json({ limit: "10mb" }));
 
@@ -64,7 +59,7 @@ app.post("/send-email", async (req, res) => {
       },
     });
 
-    // Verify transporter (good for Render logs)
+    // Verify transporter (helps debugging on Render)
     await transporter.verify();
 
     const attachments = drawings.map((image, index) => ({
