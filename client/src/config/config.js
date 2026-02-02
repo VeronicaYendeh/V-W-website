@@ -6,7 +6,7 @@ const config = {
     slides: [
       [
         "Hey my love",
-        "I made something for you for valentine's day 💖",
+        "I made something for you for our aniversary 💖",
         // If you set `sentencePerSlide` to 2, the next text won't be visible
         "Surprise!",
       ],
@@ -59,7 +59,7 @@ const config = {
       },
       {
         id: 3,
-        title: "When is my Birthday?",
+        title: "When is our aniversay?",
         description: "Don't make the same mistake twice:D",
         correctAnswer: "feb-14",
         options: [
